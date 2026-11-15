@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Administrador — Cine Paradiso{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard-container">
+    <div class="admin-header">
+        <div>
+            <span class="badge badge-admin">Backoffice Admin</span>
+            <h1>Métricas y Estadísticas del Cine</h1>
+            <p>Ocupación por función, ventas por género y control de cancelaciones.</p>
+        </div>
+        <div class="admin-quick-actions">
+            <a href="{{ url_for('admin.validar_qr') }}" class="btn btn-primary">🎟️ Validar QR en Puerta</a>
+            <a href="{{ url_for('admin.abm_servicios') }}" class="btn btn-secondary">🍿 Administrar Servicios</a>
+        </div>
+    </div>
+
+    <!-- Resumen de Cancelaciones -->
+    <section class="dashboard-section">
+        <h2>Resumen de Operaciones y Cancelaciones</h2>
+        <div class="stats-cards-grid">
+            {% for c in stats.get('resumen_cancelaciones', []) %}
+                <div class="stat-card stat-card-{{ c.estado }}">
+                    <span class="stat-label">Compras {{ c.estado|upper }}</span>
+                    <span class="stat-value">{{ c.cantidad }}</span>
+                    <span class="stat-sub">Monto: ${{ "%.2f"|format(c.monto_total) }}</span>
+                </div>
+            {% else %}
+                <div class="empty-state">No hay registros de compras aún.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Ocupación por Película -->
+    <section class="dashboard-section">
+        <h2>Ocupación y Recaudación por Película</h2>
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Película</th>
+                        <th>Funciones Programadas</th>
+                        <th>Butacas Vendidas</th>
+                        <th>Recaudación en Entradas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for op in stats.get('ocupacion_peliculas', []) %}
+                        <tr>
+                            <td><strong>{{ op.titulo }}</strong></td>
+                            <td>{{ op.total_funciones }} funciones</td>
+                            <td>{{ op.butacas_vendidas }} butacas</td>
+                            <td class="text-gold">${{ "%.2f"|format(op.recaudacion_entradas) }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-center">No hay datos de ocupación disponibles.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Ventas por Género -->
+    <section class="dashboard-section">
+        <h2>Ventas por Género Cinematográfico</h2>
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Género</th>
+                        <th>Entradas Vendidas</th>
+                        <th>Total Recaudado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vg in stats.get('ventas_genero', []) %}
+                        <tr>
+                            <td>{{ vg.genero }}</td>
+                            <td>{{ vg.entradas_vendidas }} entradas</td>
+                            <td class="text-gold">${{ "%.2f"|format(vg.total_recaudado) }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="3" class="text-center">No hay ventas registradas por género.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

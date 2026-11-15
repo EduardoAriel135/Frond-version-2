@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}ABM de Servicios — Backoffice Cine Paradiso{% endblock %}
+
+{% block content %}
+<div class="admin-servicios-container">
+    <div class="admin-header">
+        <div>
+            <span class="badge badge-admin">Catálogo de Productos</span>
+            <h1>ABM de Servicios Adicionales</h1>
+            <p>Alta, modificación y baja lógica de comida, bebidas, estacionamiento y pases VIP (S5).</p>
+        </div>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">← Volver al Dashboard</a>
+    </div>
+
+    <!-- Formulario de Alta -->
+    <div class="service-create-card">
+        <h3>➕ Agregar Nuevo Servicio</h3>
+        <form method="POST" action="{{ url_for('admin.abm_servicios') }}" class="service-form-grid">
+            <div class="form-group">
+                <label for="nombre">Nombre del Producto / Servicio</label>
+                <input type="text" id="nombre" name="nombre" required placeholder="Ej: Combo Mega Pochoclos" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="precio">Precio en Pesos (ARS)</label>
+                <input type="number" id="precio" name="precio" step="0.01" min="1" required placeholder="Ej: 3500.00" class="form-control">
+            </div>
+            <div class="form-group full-width">
+                <label for="descripcion">Descripción</label>
+                <input type="text" id="descripcion" name="descripcion" placeholder="Ej: Balde gigante de pochoclos salados + 2 gaseosas grandes" class="form-control">
+            </div>
+            <div class="form-actions full-width">
+                <button type="submit" class="btn btn-primary">Crear Servicio</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Listado con Baja Lógica -->
+    <section class="services-list-section">
+        <h3>Servicios Registrados en el Sistema</h3>
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Precio (ARS)</th>
+                        <th>Estado</th>
+                        <th>Acción (Baja / Reactivación)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in servicios %}
+                        <tr class="{% if not s.activo %}row-disabled{% endif %}">
+                            <td>#{{ s.id }}</td>
+                            <td><strong>{{ s.nombre }}</strong></td>
+                            <td>{{ s.descripcion or 'Sin descripción' }}</td>
+                            <td class="text-gold">${{ "%.2f"|format(s.precio) }}</td>
+                            <td>
+                                {% if s.activo %}
+                                    <span class="badge-status status-activa">ACTIVO</span>
+                                {% else %}
+                                    <span class="badge-status status-cancelada">INACTIVO</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin.alternar_servicio', servicio_id=s.id) }}" style="display:inline;">
+                                    <input type="hidden" name="activo" value="{{ '1' if s.activo else '0' }}">
+                                    {% if s.activo %}
+                                        <button type="submit" class="btn btn-outline-danger-sm">Dar de Baja</button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-outline-success-sm">Reactivar</button>
+                                    {% endif %}
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="text-center">No hay servicios registrados en la base.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

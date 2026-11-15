@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Comprobante de Compra #{{ compra.id }} — Cine Paradiso{% endblock %}
+
+{% block content %}
+<div class="comprobante-card">
+    <div class="comprobante-header">
+        <div class="badge-status status-{{ compra.estado }}">
+            Estado: {{ compra.estado|upper }}
+        </div>
+        <h1>Comprobante de Compra #{{ compra.id }}</h1>
+        <p class="comprobante-fecha">Fecha de emisión: {{ compra.fecha|formato_fecha }}</p>
+    </div>
+
+    <div class="comprobante-body">
+        <div class="ticket-info">
+            <h2>{{ compra.pelicula_titulo }}</h2>
+            <p><strong>Complejo:</strong> {{ compra.local_nombre }}</p>
+            <p><strong>Sala:</strong> {{ compra.sala_nombre }}</p>
+            <p><strong>Función:</strong> {{ compra.funcion_inicio|formato_fecha }}</p>
+            <p><strong>Titular:</strong> {{ compra.usuario_nombre }} ({{ compra.usuario_email }})</p>
+
+            <div class="entradas-list">
+                <h3>Butacas asignadas:</h3>
+                <div class="seat-tags">
+                    {% for e in compra.entradas %}
+                        <span class="seat-tag">{{ e.fila|fila_letra }}{{ e.columna }} (${{ "%.2f"|format(e.precio) }})</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if compra.servicios %}
+                <div class="servicios-list">
+                    <h3>Servicios contratados:</h3>
+                    <ul>
+                        {% for s in compra.servicios %}
+                            <li>{{ s.cantidad }}x {{ s.nombre }} — ${{ "%.2f"|format(s.precio_unitario * s.cantidad) }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="total-box">
+                <span>Total abonado (ARS):</span>
+                <span class="total-amount">${{ "%.2f"|format(compra.total) }}</span>
+            </div>
+        </div>
+
+        <div class="ticket-qr-area">
+            <h3>Pase de Ingreso a Sala</h3>
+            <div class="qr-box">
+                <!-- Código QR generado en Python localmente (100% offline) -->
+                <img src="{{ compra.qr_token|generar_qr }}" alt="Código QR de ingreso" class="qr-image">
+                <span class="qr-token-label">Token: <code>{{ compra.qr_token[:12] }}...</code></span>
+            </div>
+            <p class="qr-instructions">
+                Presentá este código QR en el acceso a la sala desde tu teléfono para que el personal lo escanee y valide.
+            </p>
+
+            {% if compra.estado == 'activa' %}
+                <form method="POST" action="{{ url_for('public.cancelar_compra', compra_id=compra.id) }}" onsubmit="return confirm('¿Estás seguro de que deseas cancelar esta compra? Se liberarán todas tus butacas.');">
+                    <button type="submit" class="btn btn-danger btn-block">
+                        Cancelar Compra (hasta 2hs antes)
+                    </button>
+                </form>
+            {% elif compra.estado == 'cancelada' %}
+                <div class="alert alert-danger">Esta compra ha sido cancelada el {{ compra.fecha_cancelacion|formato_fecha }}.</div>
+            {% elif compra.estado == 'usada' %}
+                <div class="alert alert-success">QR validado el {{ compra.fecha_validacion|formato_fecha }}. ¡Que disfrutes la función!</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Cartelera — Cine Paradiso{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="hero-text">
+        <h1>Vivi el cine como nunca antes</h1>
+        <p>Elegí tu función en nuestros 3 complejos y reservá tus butacas al instante.</p>
+    </div>
+</section>
+
+{% if error_backend %}
+    <div class="alert alert-warning">
+        <strong>Aviso del sistema:</strong> {{ error_backend }}.
+        <br>Asegurate de que el Backend de la API esté corriendo en <code>http://localhost:5000</code> y MySQL tenga la base cargada.
+    </div>
+{% endif %}
+
+<section class="section-title-wrap">
+    <h2 class="section-title">Películas en Cartelera</h2>
+</section>
+
+{% if peliculas %}
+    <div class="movies-grid">
+        {% for p in peliculas %}
+            <article class="movie-card">
+                <div class="movie-poster-wrap">
+                    {% if p.poster_url %}
+                        <img src="{{ p.poster_url }}" alt="Póster de {{ p.titulo }}" class="movie-poster" loading="lazy">
+                    {% else %}
+                        <div class="poster-placeholder">
+                            <span>🎬</span>
+                        </div>
+                    {% endif %}
+                    <span class="badge-clasificacion">{{ p.clasificacion }}</span>
+                </div>
+                <div class="movie-info">
+                    <h3 class="movie-title">{{ p.titulo }}</h3>
+                    <p class="movie-meta">⏱️ {{ p.duracion_min }} min</p>
+                    <p class="movie-synopsis">{{ p.sinopsis[:140] }}{% if p.sinopsis|length > 140 %}...{% endif %}</p>
+                    <a href="{{ url_for('public.pelicula_detalle', pelicula_id=p.id) }}" class="btn btn-primary btn-block">
+                        Ver funciones y horarios
+                    </a>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    {% if not error_backend %}
+        <div class="empty-state">
+            <p>No hay películas programadas en cartelera para el día de hoy.</p>
+        </div>
+    {% endif %}
+{% endif %}
+{% endblock %}

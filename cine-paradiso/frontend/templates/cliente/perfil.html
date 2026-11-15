@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Mi Perfil — Cine Paradiso{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header-card">
+        <div class="profile-avatar">👤</div>
+        <div class="profile-info">
+            <h1>{{ usuario.nombre }}</h1>
+            <p class="profile-email">📧 {{ usuario.email }}</p>
+            <span class="badge badge-rol">{{ usuario.rol|capitalize }}</span>
+        </div>
+    </div>
+
+    <!-- Películas Vistas (S22) -->
+    <section class="profile-section">
+        <h2 class="section-title">Películas que ya viste</h2>
+        {% if peliculas_vistas %}
+            <div class="watched-grid">
+                {% for p in peliculas_vistas %}
+                    <div class="watched-card">
+                        <div class="watched-poster">
+                            {% if p.poster_url %}
+                                <img src="{{ p.poster_url }}" alt="{{ p.titulo }}">
+                            {% else %}
+                                <div class="poster-placeholder small">🎬</div>
+                            {% endif %}
+                        </div>
+                        <div class="watched-info">
+                            <h4>{{ p.titulo }}</h4>
+                            <p class="watched-date">Vista el: {{ p.fecha_vista|formato_fecha }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Aún no tenés películas marcadas como vistas. ¡Cuando asistas a una función y el administrador valide tu código QR, aparecerán aquí!</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <!-- Historial de Compras (S2, S13, S14, S22) -->
+    <section class="profile-section">
+        <h2 class="section-title">Historial de Compras y Entradas</h2>
+        {% if compras %}
+            <div class="purchases-list">
+                {% for c in compras %}
+                    <div class="purchase-item-card">
+                        <div class="purchase-item-header">
+                            <div>
+                                <span class="badge-status status-{{ c.estado }}">
+                                    {{ c.estado|upper }}
+                                </span>
+                                <h3>{{ c.pelicula }}</h3>
+                                <p class="purchase-meta">
+                                    📍 {{ c.local }} &bull; {{ c.sala }} &bull;
+                                    🕒 Función: <strong>{{ c.inicio|formato_fecha }}</strong>
+                                </p>
+                            </div>
+                            <div class="purchase-total-box">
+                                <span class="purchase-total">${{ "%.2f"|format(c.total) }}</span>
+                                <small>Compra #{{ c.id }}</small>
+                            </div>
+                        </div>
+
+                        <div class="purchase-item-details">
+                            <p><strong>Butacas:</strong> {{ c.butacas|join(', ') }}</p>
+                            {% if c.servicios %}
+                                <p><strong>Servicios:</strong> 
+                                    {% for s in c.servicios %}
+                                        {{ s.cantidad }}x {{ s.nombre }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </p>
+                            {% endif %}
+                        </div>
+
+                        <div class="purchase-item-actions">
+                            <a href="{{ url_for('public.ver_comprobante', compra_id=c.id) }}" class="btn btn-outline-sm">
+                                🎟️ Ver Pase QR y Comprobante
+                            </a>
+                            {% if c.estado == 'activa' %}
+                                <form method="POST" action="{{ url_for('public.cancelar_compra', compra_id=c.id) }}" style="display:inline;" onsubmit="return confirm('¿Seguro que deseas cancelar esta compra? Se liberarán todas tus butacas.');">
+                                    <button type="submit" class="btn btn-danger-sm">
+                                        Cancelar Compra
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No has realizado compras todavía.</p>
+                <a href="{{ url_for('public.index') }}" class="btn btn-primary" style="margin-top: 1rem;">
+                    Explorar Cartelera
+                </a>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

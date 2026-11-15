@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Selección de Butacas — Cine Paradiso{% endblock %}
+
+{% block content %}
+<div class="checkout-layout">
+    <div class="room-container">
+        <div class="room-header">
+            <h2>Selección de Butacas</h2>
+            <p>Sala: <strong>{{ sala.sala_nombre }}</strong> &bull; Precio por entrada: <strong>${{ "%.2f"|format(sala.precio_unitario) }}</strong></p>
+            <p class="legend-text">Máximo permitido: <strong>6 entradas por compra</strong> (S3).</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('public.seleccionar_butacas', funcion_id=sala.funcion_id) }}" id="form-compra">
+            <div class="cinema-screen">
+                <div class="screen-label">PANTALLA</div>
+            </div>
+
+            <div class="seats-grid-wrap">
+                <div class="seats-grid">
+                    {% for f in filas %}
+                        <div class="seat-row">
+                            <span class="row-label">{{ f|fila_letra }}</span>
+                            <div class="seats-in-row">
+                                {% for c in columnas %}
+                                    {% if (f, c) in ocupadas %}
+                                        <div class="seat seat-occupied" title="Butaca {{ f|fila_letra }}{{ c }} (Ocupada)">
+                                            <span>{{ c }}</span>
+                                        </div>
+                                    {% else %}
+                                        <label class="seat seat-available" title="Butaca {{ f|fila_letra }}{{ c }}">
+                                            <input type="checkbox" name="butacas" value="{{ f }}-{{ c }}">
+                                            <span>{{ c }}</span>
+                                        </label>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span class="row-label">{{ f|fila_letra }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="seat-legend">
+                <div class="legend-item"><span class="seat-sample seat-available-sample"></span> Disponible</div>
+                <div class="legend-item"><span class="seat-sample seat-selected-sample"></span> Seleccionada</div>
+                <div class="legend-item"><span class="seat-sample seat-occupied-sample"></span> Ocupada</div>
+            </div>
+
+            {% if servicios %}
+                <section class="services-selection">
+                    <h3>Servicios y Adicionales Opcionales (S5)</h3>
+                    <div class="services-grid">
+                        {% for s in servicios %}
+                            <div class="service-card">
+                                <div>
+                                    <h4>{{ s.nombre }}</h4>
+                                    <p class="service-desc">{{ s.descripcion or '' }}</p>
+                                    <span class="service-price">+${{ "%.2f"|format(s.precio) }}</span>
+                                </div>
+                                <div class="service-quantity">
+                                    <label for="srv-{{ s.id }}">Cantidad:</label>
+                                    <input type="number" id="srv-{{ s.id }}" name="servicio_{{ s.id }}" min="0" max="6" value="0">
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            <!-- Resumen en vivo de selección (UI pura sin llamadas al servidor) -->
+            <div class="live-selection-summary">
+                <div class="summary-info">
+                    <span id="seat-count-text">0 de 6 butacas seleccionadas</span>
+                    <span id="max-limit-warning" class="limit-warning" style="display: none;">⚠️ Límite alcanzado: máximo 6 entradas por compra (S3)</span>
+                </div>
+                <div class="summary-total">
+                    <span>Total Estimado:</span>
+                    <strong id="live-total-display">$0.00</strong>
+                </div>
+            </div>
+
+            <div class="checkout-actions">
+                <a href="{{ url_for('public.index') }}" class="btn btn-secondary">Cancelar y volver</a>
+                <button type="submit" id="btn-submit-compra" class="btn btn-primary btn-lg" disabled>
+                    Confirmar compra (Pago Simulado S1)
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Interacción pura de interfaz de usuario (sin peticiones fetch/axios)
+    document.addEventListener("DOMContentLoaded", function() {
+        const precioEntrada = parseFloat("{{ sala.precio_unitario }}") || 0;
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][name="butacas"]');
+        const cantidadInputs = document.querySelectorAll('input[type="number"][name^="servicio_"]');
+        const countText = document.getElementById("seat-count-text");
+        const warningText = document.getElementById("max-limit-warning");
+        const totalDisplay = document.getElementById("live-total-display");
+        const submitBtn = document.getElementById("btn-submit-compra");
+
+        // Precios de servicios guardados en atributos
+        const preciosServicios = {};
+        {% for s in servicios %}
+            preciosServicios["{{ s.id }}"] = parseFloat("{{ s.precio }}") || 0;
+        {% endfor %}
+
+        function actualizarTotal() {
+            let seleccionadas = 0;
+            checkboxes.forEach(cb => {
+                if (cb.checked) seleccionadas++;
+            });
+
+            // Control de límite máximo 6 entradas (S3)
+            if (seleccionadas >= 6) {
+                warningText.style.display = "inline";
+                checkboxes.forEach(cb => {
+                    if (!cb.checked) cb.disabled = true;
+                });
+            } else {
+                warningText.style.display = "none";
+                checkboxes.forEach(cb => {
+                    cb.disabled = false;
+                });
+            }
+
+            countText.textContent = `${seleccionadas} de 6 butacas seleccionadas`;
+
+            // Cálculo del total
+            let total = seleccionadas * precioEntrada;
+            cantidadInputs.forEach(input => {
+                const sId = input.id.replace("srv-", "");
+                const cant = parseInt(input.value) || 0;
+                const unitario = preciosServicios[sId] || 0;
+                total += cant * unitario;
+            });
+
+            totalDisplay.textContent = `$${total.toFixed(2)}`;
+            submitBtn.disabled = (seleccionadas === 0);
+        }
+
+        checkboxes.forEach(cb => cb.addEventListener("change", actualizarTotal));
+        cantidadInputs.forEach(inp => inp.addEventListener("input", actualizarTotal));
+        actualizarTotal();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+# docker-compose.yml para levantar la solución completa de Cine Paradiso
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: cine_paradiso_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: cine_paradiso
+      MYSQL_USER: cine_user
+      MYSQL_PASSWORD: cine_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./sql/init_db.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: cine_paradiso_backend
+    restart: always
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: cine_paradiso
+      DB_USER: cine_user
+      DB_PASSWORD: cine_password
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 5000
+      JWT_SECRET_KEY: clave_super_segura_docker_ids_2026
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: cine_paradiso_frontend
+    restart: always
+    environment:
+      FRONTEND_HOST: 0.0.0.0
+      FRONTEND_PORT: 5001
+      BACKEND_API_URL: http://backend:5000
+      FRONTEND_SECRET_KEY: clave_sesion_frontend_docker_2026
+    ports:
+      - "5001:5001"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
